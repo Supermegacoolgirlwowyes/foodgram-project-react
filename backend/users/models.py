@@ -1,6 +1,5 @@
 from django.contrib.auth.models import AbstractBaseUser, PermissionsMixin
 from django.db import models
-
 from users.managers import UserManager
 
 
@@ -54,5 +53,6 @@ class Follow(models.Model):
         related_name='following',
         verbose_name='автор'
     )
+
     class Meta:
         unique_together = ('follower', 'following')

@@ -34,7 +34,7 @@ class CustomUserSerializer(UserSerializer):
         return False
 
 
-class SubscriptionsRecipeSerializer(serializers.ModelSerializer):
+class FollowRecipeSerializer(serializers.ModelSerializer):
     class Meta:
         model = Recipe
         fields = ('id', 'name', 'image', 'cooking_time')
@@ -51,26 +51,29 @@ class FollowDisplaySerializer(serializers.ModelSerializer):
                   'is_subscribed', 'recipes', 'recipes_count')
 
     def get_is_subscribed(self, obj):
-        user = self.context['request'].user
-        if user.is_authenticated:
-            if user.follower.filter(following=obj):
-                return True
+        user = self.context.get('request').user
+        if user.follower.filter(following=obj).exists():
+            return True
         return False
 
     def get_recipes(self, obj):
-        recipes = obj.recipes.all()
-        return SubscriptionsRecipeSerializer(recipes, many=True).data
+        request = self.context.get('request')
+        recipes_limit = request.query_params.get('recipes_limit')
+        if recipes_limit:
+            recipes = obj.recipes.all()[:int(recipes_limit)]
+        else:
+            recipes = obj.recipes.all()
+        return FollowRecipeSerializer(
+            recipes,
+            many=True,
+        ).data
 
     def get_recipes_count(self, obj):
         return obj.recipes.count()
 
-    """validators = [
-            UniqueTogetherValidator(
-                queryset=Follow.objects.all(),
-                fields=['follower', 'following']
-            )
-        ]"""
-    """def get_is_subscribed(self, obj):
-        id = self.context['view'].kwargs.get('id')
-        is_subscribed = User.objects.get(id=id)
-        return is_subscribed"""
+
+class FollowCreateSerializer(serializers.ModelSerializer):
+
+    class Meta:
+        model=Follow
+        fields = ('follower', 'following')

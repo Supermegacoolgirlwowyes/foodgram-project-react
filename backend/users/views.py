@@ -20,13 +20,13 @@ from recipes.pagination import CustomPagination
 User = get_user_model()
 
 
-class SubscriptionViewSet(viewsets.ReadOnlyModelViewSet):
+class FollowAPIView(generics.ListAPIView):
     serializer_class = FollowDisplaySerializer
     permission_classes = [IsAuthenticated]
     pagination_class = CustomPagination
 
     def get_queryset(self):
-        return self.request.user.following.all()
+        return User.objects.filter(following__follower=self.request.user)
 
 
     """def perform_create(self, serializer):
