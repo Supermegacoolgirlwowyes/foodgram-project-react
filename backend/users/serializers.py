@@ -1,7 +1,7 @@
 from django.contrib.auth import get_user_model
 
 from rest_framework import serializers
-from rest_framework.validators import UniqueTogetherValidator
+from rest_framework.validators import UniqueTogetherValidator, ValidationError
 
 from djoser.serializers import UserSerializer, UserCreateSerializer
 
@@ -77,3 +77,22 @@ class FollowCreateSerializer(serializers.ModelSerializer):
     class Meta:
         model=Follow
         fields = ('follower', 'following')
+        validators = [
+            UniqueTogetherValidator(
+                queryset=Follow.objects.all(),
+                fields=('follower', 'following'),
+                message='Вы уже подписаны на этого автора'
+            )
+        ]
+
+    def validate_following(self, following):
+        request = self.context['request']
+        follower = request.user
+        if following == follower:
+            raise ValidationError('Вы не можете подписаться на самого себя')
+        return following
+
+    def to_representation(self, instance):
+        request = self.context.get('request')
+        context = {'request': request}
+        return FollowDisplaySerializer(instance.following, context=context).data

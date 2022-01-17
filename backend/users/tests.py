@@ -251,3 +251,7 @@ class UsersTests(APITestCase):
                 401,
                 "Make sure users cannot use their previous tokens"
             )
+
+    def test_subscribe(self):
+        pass
+

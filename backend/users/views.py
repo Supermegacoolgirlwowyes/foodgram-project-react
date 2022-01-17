@@ -1,26 +1,18 @@
-from django.contrib.auth import get_user_model, update_session_auth_hash
-from django.contrib.auth.tokens import default_token_generator
-from django.utils.timezone import now
-from rest_framework import generics, mixins, status, views, viewsets
-from rest_framework.decorators import action
-from rest_framework.exceptions import NotFound
-from rest_framework.generics import get_object_or_404 as _get_object_or_404
-from rest_framework.response import Response
+from django.contrib.auth import get_user_model
+from rest_framework import generics, status, views
+from rest_framework.generics import get_object_or_404
 from rest_framework.permissions import IsAuthenticated
+from rest_framework.response import Response
 
-from djoser import permissions, signals, utils
-from djoser.compat import get_user_email
-from djoser.conf import settings
-from djoser.views import UserViewSet
+from recipes.pagination import CustomPagination
 
 from .models import Follow
-from .serializers import CustomUserSerializer, FollowDisplaySerializer
-from recipes.pagination import CustomPagination
+from .serializers import FollowCreateSerializer, FollowDisplaySerializer
 
 User = get_user_model()
 
 
-class FollowAPIView(generics.ListAPIView):
+class FollowDisplayView(generics.ListAPIView):
     serializer_class = FollowDisplaySerializer
     permission_classes = [IsAuthenticated]
     pagination_class = CustomPagination
@@ -29,7 +21,33 @@ class FollowAPIView(generics.ListAPIView):
         return User.objects.filter(following__follower=self.request.user)
 
 
-    """def perform_create(self, serializer):
-        is_subscribed = _get_object_or_404(User, id=self.kwargs.get('id'))
-        if is_subscribed != self.request.user:
-            serializer.save(is_subscribed=is_subscribed, user=self.request.user)"""
+class FollowCreateView(views.APIView):
+    queryset = Follow.objects.all()
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request, user_id):
+        data = {
+            'follower': request.user.id,
+            'following': get_object_or_404(User, id=user_id).id
+        }
+        serializer = FollowCreateSerializer(
+            data=data,
+            context={'request': request}
+        )
+        serializer.is_valid(raise_exception=True)
+        serializer.save()
+        return Response(serializer.data, status=status.HTTP_201_CREATED)
+
+    def delete(self, request, user_id):
+        following = get_object_or_404(User, id=user_id)
+        try:
+            Follow.objects.get(
+                follower=request.user,
+                following=following
+            ).delete()
+            return Response(status=status.HTTP_204_NO_CONTENT)
+        except Follow.DoesNotExist:
+            return Response(
+                data={'message': 'Вы не были подписаны на этого автора'},
+                status=status.HTTP_400_BAD_REQUEST
+            )
