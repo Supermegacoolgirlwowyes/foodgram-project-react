@@ -55,4 +55,5 @@ class Follow(models.Model):
     )
 
     class Meta:
+        ordering = ['follower']
         unique_together = ('follower', 'following')

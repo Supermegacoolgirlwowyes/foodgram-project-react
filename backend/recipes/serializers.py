@@ -172,25 +172,33 @@ class FavoriteSerializer(serializers.ModelSerializer):
             )
         ]
 
-    """def validate(self, data):
-        request = self.context.get('request')
-        if not request or request.user.is_anonymous:
-            return False
-        recipe = data['recipe']
-        if Favorite.objects.filter(user=request.user, recipe=recipe).exists():
-            raise serializers.ValidationError({
-                'status': 'Рецепт уже есть в избранном!'
-            })
-        return data"""
+    """def validate_following(self, following):
+        request = self.context['request']
+        follower = request.user
+        if following == follower:
+            raise ValidationError('Вы не можете подписаться на самого себя')
+        return following"""
 
-    """def to_representation(self, instance):
+    def to_representation(self, instance):
         request = self.context.get('request')
         context = {'request': request}
-        return RecipePreviewSerializer(
-            instance.recipe, context=context).data"""
+        return RecipePreviewSerializer(instance.recipe, context=context).data
 
 
-"""class ShoppingCartSerializer(serializers.ModelSerializer):
+class ShoppingCartSerializer(serializers.ModelSerializer):
+
     class Meta:
         model = ShoppingCart
-        fields = ('user', 'recipe')"""
+        fields = ('user', 'recipe', )
+        validators = [
+            validators.UniqueTogetherValidator(
+                queryset=ShoppingCart.objects.all(),
+                fields=['user', 'recipe'],
+                message='Вы уже добавили этот рецепт в избранное'
+            )
+        ]
+
+    def to_representation(self, instance):
+        request = self.context.get('request')
+        context = {'request': request}
+        return RecipePreviewSerializer(instance.recipe, context=context).data
