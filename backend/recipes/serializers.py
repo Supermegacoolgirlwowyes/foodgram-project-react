@@ -1,9 +1,10 @@
 from drf_extra_fields.fields import Base64ImageField
-
 from rest_framework import serializers, validators
 
-from .models import Favorite, Ingredient, Recipe, RecipeIngredient, ShoppingCart, Tag
 from users.serializers import CustomUserSerializer
+
+from .models import (Favorite, Ingredient, Recipe, RecipeIngredient,
+                     ShoppingCart, Tag)
 
 
 class TagSerializer(serializers.ModelSerializer):
@@ -96,7 +97,9 @@ class RecipeCreateSerializer(serializers.ModelSerializer):
             ingredient_id_list = []
             for i in ingredients:
                 if i['id'] in ingredient_id_list:
-                    raise validators.ValidationError('Не стоит добавлять два одинаковых ингредиента')
+                    raise validators.ValidationError(
+                        'Не стоит добавлять два одинаковых ингредиента'
+                    )
                 if i['amount'] < 1:
                     raise validators.ValidationError('Что-то как-то мало')
                 ingredient_id_list.append(i['id'])
@@ -107,7 +110,9 @@ class RecipeCreateSerializer(serializers.ModelSerializer):
         if request.method in ['POST', 'PUT', 'PATCH']:
             user = request.user
             if Recipe.objects.filter(author=user, name=name).exists():
-                raise validators.ValidationError('Рецепт с таким названием у вас уже есть')
+                raise validators.ValidationError(
+                    'Рецепт с таким названием у вас уже есть'
+                )
         return name
 
     def add_tags(self, tags, recipe):

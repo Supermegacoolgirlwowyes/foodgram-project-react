@@ -1,17 +1,47 @@
-version: '3.3'
+version: '3.8'
+
+volumes:
+  postgres_data:
+  static:
+  media:
+
 services:
+  db:
+    image: postgres:13.5-alpine
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    env_file:
+      - ./.env
+
+  backend:
+    image: irinabalerina/foodgram_backend:latest
+    restart: always
+    depends_on:
+      - db
+    env_file:
+      - ./.env
+    volumes:
+      - static:/code/static/
+      - media:/code/media/
 
   frontend:
-    build:
-      context: ../frontend
-      dockerfile: Dockerfile
+    image: irinabalerina/foodgram_frontend:latest
     volumes:
       - ../frontend/:/app/result_build/
+
   nginx:
-    image: nginx:1.19.3
-    ports:
-      - "80:80"
+    image: nginx:1.21.5-alpine
+    restart: unless-stopped
     volumes:
       - ./nginx.conf:/etc/nginx/conf.d/default.conf
       - ../frontend/build:/usr/share/nginx/html/
       - ../docs/:/usr/share/nginx/html/api/docs/
+      - static:/var/html/static
+      - media:/var/html/media
+    depends_on:
+      - backend
+      - frontend
+    env_file:
+      - ./.env
+    ports:
+      - "80:80"

@@ -1,12 +1,11 @@
 from django.contrib.auth import get_user_model
-
+from djoser.serializers import UserCreateSerializer, UserSerializer
 from rest_framework import serializers
 from rest_framework.validators import UniqueTogetherValidator, ValidationError
 
-from djoser.serializers import UserSerializer, UserCreateSerializer
+from recipes.models import Recipe
 
 from .models import Follow
-from recipes.models import Recipe
 
 User = get_user_model()
 
@@ -21,10 +20,12 @@ class CustomUserCreateSerializer(UserCreateSerializer):
 
 class CustomUserSerializer(UserSerializer):
     is_subscribed = serializers.SerializerMethodField(read_only=True)
+
     class Meta:
         model = User
         fields = (
-            'email', 'id', 'username', 'first_name', 'last_name', 'is_subscribed'
+            'email', 'id', 'username', 'first_name',
+            'last_name', 'is_subscribed'
         )
 
     def get_is_subscribed(self, obj):
@@ -75,7 +76,7 @@ class FollowDisplaySerializer(serializers.ModelSerializer):
 class FollowCreateSerializer(serializers.ModelSerializer):
 
     class Meta:
-        model=Follow
+        model = Follow
         fields = ('follower', 'following')
         validators = [
             UniqueTogetherValidator(
@@ -95,4 +96,6 @@ class FollowCreateSerializer(serializers.ModelSerializer):
     def to_representation(self, instance):
         request = self.context.get('request')
         context = {'request': request}
-        return FollowDisplaySerializer(instance.following, context=context).data
+        return FollowDisplaySerializer(
+            instance.following, context=context
+        ).data

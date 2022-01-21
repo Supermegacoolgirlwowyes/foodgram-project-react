@@ -254,4 +254,3 @@ class UsersTests(APITestCase):
 
     def test_subscribe(self):
         pass
-
