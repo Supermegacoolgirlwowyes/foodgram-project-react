@@ -1,17 +1,22 @@
 from django.urls import include, path
+from rest_framework.routers import DefaultRouter
 
-from .views import FollowCreateView, FollowDisplayView
+from .views import CustomUserViewSet, FollowCreateView, FollowDisplayView
+
+router = DefaultRouter()
+router.register('', CustomUserViewSet)
+
 
 urlpatterns = [
     path(
-        'users/subscriptions/',
+        'subscriptions/',
         FollowDisplayView.as_view(),
         name='subscriptions'
     ),
     path(
-        'users/<int:user_id>/subscribe/',
+        '<int:user_id>/subscribe/',
         FollowCreateView.as_view(),
         name='subscribe'
     ),
-    path('', include('djoser.urls'))
-    ]
+    path('', include(router.urls))
+]

@@ -1,4 +1,5 @@
 from django.contrib.auth import get_user_model
+from djoser.views import UserViewSet
 from rest_framework import generics, status, views
 from rest_framework.generics import get_object_or_404
 from rest_framework.permissions import IsAuthenticated
@@ -10,6 +11,10 @@ from .models import Follow
 from .serializers import FollowCreateSerializer, FollowDisplaySerializer
 
 User = get_user_model()
+
+
+class CustomUserViewSet(UserViewSet):
+    pagination_class = CustomPagination
 
 
 class FollowDisplayView(generics.ListAPIView):

@@ -67,30 +67,32 @@ class RecipeDisplaySerializer(serializers.ModelSerializer):
 
     def get_is_favorited(self, recipe):
         user = self.context.get('request').user
-        if user.is_authenticated and user.favorited_by.filter(recipe=recipe):
-            return True
+        if user.is_authenticated:
+            return Favorite.objects.filter(user=user, recipe=recipe).exists()
         return False
 
     def get_is_in_shopping_cart(self, recipe):
         user = self.context.get('request').user
-        if user.is_authenticated and user.buyer.filter(recipe=recipe):
-            return True
+        if user.is_authenticated:
+            return ShoppingCart.objects.filter(
+                user=user, recipe=recipe
+            ).exists()
         return False
 
 
 class RecipeCreateSerializer(serializers.ModelSerializer):
+    """ Cериализатор для создания и редактирования рецепта """
     ingredients = IngredientAmountSerializer(many=True)
     tags = serializers.PrimaryKeyRelatedField(
         queryset=Tag.objects.all(),
         many=True,
-        required=False
     )
     image = Base64ImageField()
 
     class Meta:
         model = Recipe
-        fields = ('id', 'ingredients', 'tags', 'image', 'name',
-                  'text', 'cooking_time', )
+        fields = ('id', 'ingredients', 'tags', 'image',
+                  'name', 'text', 'cooking_time', )
 
     def validate_ingredients(self, ingredients):
         if self.context.get('request').method in ['POST', 'PUT', 'PATCH']:
@@ -98,16 +100,18 @@ class RecipeCreateSerializer(serializers.ModelSerializer):
             for i in ingredients:
                 if i['id'] in ingredient_id_list:
                     raise validators.ValidationError(
-                        'Не стоит добавлять два одинаковых ингредиента'
+                        {'ingredients': 'Ингредиенты должны быть уникальными'}
                     )
                 if i['amount'] < 1:
-                    raise validators.ValidationError('Что-то как-то мало')
+                    raise validators.ValidationError(
+                        {'amount': 'Значение должно быть больше ноля'}
+                    )
                 ingredient_id_list.append(i['id'])
         return ingredients
 
     def validate_name(self, name):
         request = self.context.get('request')
-        if request.method in ['POST', 'PUT', 'PATCH']:
+        if request.method == 'POST':
             user = request.user
             if Recipe.objects.filter(author=user, name=name).exists():
                 raise validators.ValidationError(
@@ -159,13 +163,14 @@ class RecipeCreateSerializer(serializers.ModelSerializer):
 
 
 class RecipePreviewSerializer(serializers.ModelSerializer):
+    """ Cериализатор для превью рецепта """
     class Meta:
         model = Recipe
         fields = ('id', 'name', 'image', 'cooking_time')
 
 
 class FavoriteSerializer(serializers.ModelSerializer):
-
+    """ Cериализатор для добавления рецепта в избранное """
     class Meta:
         model = Favorite
         fields = ('user', 'recipe', )
@@ -177,13 +182,6 @@ class FavoriteSerializer(serializers.ModelSerializer):
             )
         ]
 
-    """def validate_following(self, following):
-        request = self.context['request']
-        follower = request.user
-        if following == follower:
-            raise ValidationError('Вы не можете подписаться на самого себя')
-        return following"""
-
     def to_representation(self, instance):
         request = self.context.get('request')
         context = {'request': request}
@@ -191,7 +189,7 @@ class FavoriteSerializer(serializers.ModelSerializer):
 
 
 class ShoppingCartSerializer(serializers.ModelSerializer):
-
+    """ Cериализатор для добавления рецепта в список покупок """
     class Meta:
         model = ShoppingCart
         fields = ('user', 'recipe', )
@@ -199,7 +197,7 @@ class ShoppingCartSerializer(serializers.ModelSerializer):
             validators.UniqueTogetherValidator(
                 queryset=ShoppingCart.objects.all(),
                 fields=['user', 'recipe'],
-                message='Вы уже добавили этот рецепт в избранное'
+                message='Вы уже добавили этот рецепт в список покупок'
             )
         ]
 

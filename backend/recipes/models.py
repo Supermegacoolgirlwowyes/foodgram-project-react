@@ -1,7 +1,6 @@
 from django.contrib.auth import get_user_model
 from django.core.validators import MinValueValidator
 from django.db import models
-from django.utils.html import format_html
 
 User = get_user_model()
 
@@ -26,16 +25,10 @@ class Tag(models.Model):
     )
 
     class Meta:
-        ordering = ['name']
+        ordering = ['-id']
 
     def __str__(self):
         return self.name
-
-    def colored_name(self):
-        return format_html(
-            '<span style="color: #{};">{}</span>',
-            self.color,
-        )
 
 
 class Ingredient(models.Model):
@@ -49,7 +42,7 @@ class Ingredient(models.Model):
     )
 
     class Meta:
-        ordering = ['name']
+        ordering = ['-id']
 
     def __str__(self):
         return self.name + ", " + self.measurement_unit
@@ -100,23 +93,18 @@ class Recipe(models.Model):
         auto_now_add=True,
     )
 
-    def get_ingredients(self):
-        return ", ".join([i.name for i in self.ingredients.all()])
+    def list_ingredients(self):
+        return ', '.join([i.name for i in self.ingredients.all()])
 
-    def get_tags(self):
-        return ", ".join([t.name for t in self.tags.all()])
+    def list_tags(self):
+        return ', '.join([t.name for t in self.tags.all()])
 
     def __str__(self):
         return self.name
 
     class Meta:
         ordering = ['-pub_date']
-        constraints = [
-            models.UniqueConstraint(
-                fields=['author', 'name'],
-                name='unique_recipe'
-            )
-        ]
+        unique_together = ('author', 'name')
 
 
 class RecipeIngredient(models.Model):
@@ -124,7 +112,7 @@ class RecipeIngredient(models.Model):
         Recipe, on_delete=models.CASCADE, verbose_name='рецепт'
     )
     ingredient = models.ForeignKey(
-        Ingredient, on_delete=models.PROTECT, verbose_name='рецепт'
+        Ingredient, on_delete=models.PROTECT, verbose_name='ингредиент'
     )
     amount = models.PositiveIntegerField(
         verbose_name='количество',
@@ -138,7 +126,7 @@ class RecipeIngredient(models.Model):
 
     class Meta:
         ordering = ['recipe']
-        unique_together = ('ingredient', 'recipe')
+        unique_together = ('recipe', 'ingredient')
 
 
 class Favorite(models.Model):

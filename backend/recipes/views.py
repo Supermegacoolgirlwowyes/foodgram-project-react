@@ -6,8 +6,8 @@ from django_filters.rest_framework import DjangoFilterBackend
 from reportlab.pdfbase import pdfmetrics
 from reportlab.pdfbase.ttfonts import TTFont
 from reportlab.pdfgen import canvas
-from rest_framework import status, views, viewsets
-from rest_framework.decorators import api_view, permission_classes
+from rest_framework import status, viewsets
+from rest_framework.decorators import action, api_view, permission_classes
 from rest_framework.generics import get_object_or_404  # as _get_object_or_404
 from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.response import Response
@@ -48,10 +48,62 @@ class RecipeViewSet(viewsets.ModelViewSet):
             return RecipeDisplaySerializer
         return RecipeCreateSerializer
 
+    @staticmethod
+    def post_method(request, recipe_id, serializers):
+        data = {'user': request.user.id, 'recipe': recipe_id}
+        serializer = serializers(data=data, context={'request': request})
+        serializer.is_valid(raise_exception=True)
+        serializer.save()
+        return Response(serializer.data, status=status.HTTP_201_CREATED)
 
-class FavoriteView(views.APIView):
-    queryset = Favorite.objects.all()
+    @staticmethod
+    def delete_method(request, recipe_id, model):
+        user = request.user
+        recipe = get_object_or_404(Recipe, id=recipe_id)
+        instance = get_object_or_404(model, user=user, recipe=recipe)
+        instance.delete()
+        return Response(status=status.HTTP_204_NO_CONTENT)
+
+    @action(
+        detail=True,
+        methods=['post'],
+        permission_classes=[IsAuthenticated]
+    )
+    def favorite(self, request, pk):
+        return self.post_method(
+            request, pk, FavoriteSerializer
+        )
+
+    @favorite.mapping.delete
+    def delete_favorite(self, request, pk):
+        return self.delete_method(
+            request, pk, Favorite
+        )
+
+    @action(
+        detail=True,
+        methods=['post'],
+        permission_classes=[IsAuthenticated]
+    )
+    def shopping_cart(self, request, pk):
+        return self.post_method(
+            request, pk, ShoppingCartSerializer
+        )
+
+    @shopping_cart.mapping.delete
+    def delete_shopping_cart(self, request, pk):
+        return self.delete_method(
+            request, pk, ShoppingCart
+        )
+
+
+"""class FavoriteView(views.APIView):
+    queryset = Recipe.objects.all()
+    serializer_class = RecipeDisplaySerializer
     permission_classes = [IsAuthenticated]
+
+    def get_queryset(self):
+        return Recipe.objects.get(is_favorited__user=self.request.user)
 
     def post(self, request, recipe_id):
         data = {
@@ -78,12 +130,15 @@ class FavoriteView(views.APIView):
             return Response(
                 data={'message': 'Этого рецепта не было в избранном'},
                 status=status.HTTP_400_BAD_REQUEST
-            )
+            )"""
 
 
-class ShoppingCartView(views.APIView):
-    queryset = ShoppingCart.objects.all()
+"""class ShoppingCartView(views.APIView):
+    # queryset = Recipe.objects.all()
     permission_classes = [IsAuthenticated]
+
+    def get_queryset(self):
+        return ShoppingCart.objects.get(user=self.request.user)
 
     def post(self, request, recipe_id):
         data = {
@@ -110,10 +165,10 @@ class ShoppingCartView(views.APIView):
             return Response(
                 data={'message': 'Этого рецепта не было в списке покупок'},
                 status=status.HTTP_400_BAD_REQUEST
-            )
+            )"""
 
 
-def some_view(ingredients):
+def create_pdf(ingredients):
     x, y = 50, 770
     buffer = io.BytesIO()
     pdf = canvas.Canvas(buffer)
@@ -151,4 +206,4 @@ def shopping_list(request):
     ).order_by(
         'ingredient__name'
     ).annotate(amount=Sum('amount'))
-    return some_view(ingredients)
+    return create_pdf(ingredients)
