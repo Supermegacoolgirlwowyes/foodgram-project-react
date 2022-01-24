@@ -65,7 +65,7 @@ jobs:
           passphrase: ${{ secrets.SSH_PASSPHRASE }}
           stack_file_name: docker-compose.yaml
           script: |
-            cd infra
+            cd foodgram/infra/
             sudo docker-compose stop
             sudo docker-compose rm -fs backend
             sudo docker image rm ${{ secrets.DOCKER_USERNAME }}/foodgram_backend
