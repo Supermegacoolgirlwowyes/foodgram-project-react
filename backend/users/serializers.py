@@ -2,7 +2,6 @@ from django.contrib.auth import get_user_model
 from djoser.serializers import UserCreateSerializer, UserSerializer
 from rest_framework import serializers
 from rest_framework.validators import UniqueTogetherValidator, ValidationError
-
 from recipes.models import Recipe
 
 from .models import Follow
