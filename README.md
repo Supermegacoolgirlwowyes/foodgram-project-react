@@ -1,5 +1,5 @@
 # Foodgram
-![example workflow](https://github.com/supermegacoolgirlwowyes/yamdb_final/actions/workflows/main.yml/badge.svg)
+![example workflow](https://github.com/supermegacoolgirlwowyes/foodgram-project-react/actions/workflows/main.yml/badge.svg)
 
 Foodgram service is made for people who are passionate about food. View recipes from all over the world or create your owns, follow the authors you like, make a list of your favorite recipes or download a shopping list in just few clicks.
 
