@@ -91,7 +91,7 @@ class RecipeCreateSerializer(serializers.ModelSerializer):
                     raise validators.ValidationError(
                         {'ingredients': 'Ингредиенты должны быть уникальными'}
                     )
-            return ingredients
+        return ingredients
 
     def validate_name(self, name):
         request = self.context.get('request')
