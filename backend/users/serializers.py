@@ -4,7 +4,6 @@ from rest_framework import serializers
 from rest_framework.validators import UniqueTogetherValidator, ValidationError
 
 from recipes.models import Recipe
-
 from .models import Follow
 
 User = get_user_model()
@@ -29,10 +28,9 @@ class CustomUserSerializer(UserSerializer):
         )
 
     def get_is_subscribed(self, obj):
-        user = self.context['request'].user
-        if user.is_authenticated:
-            return user.follower.filter(following=obj).exists()
-        return False
+        user = self.context.get('request').user
+        return (user.is_authenticated and
+                user.follower.filter(following=obj).exists())
 
 
 class FollowRecipeSerializer(serializers.ModelSerializer):
@@ -42,35 +40,14 @@ class FollowRecipeSerializer(serializers.ModelSerializer):
 
 
 class FollowDisplaySerializer(serializers.ModelSerializer):
-    is_subscribed = serializers.SerializerMethodField(read_only=True)
-    recipes = serializers.SerializerMethodField(read_only=True)
-    recipes_count = serializers.SerializerMethodField(read_only=True)
+    is_subscribed = serializers.BooleanField()
+    recipes = FollowRecipeSerializer(many=True, read_only=True)
+    recipes_count = serializers.IntegerField()
 
     class Meta:
         model = User
         fields = ('email', 'id', 'username', 'first_name', 'last_name',
                   'is_subscribed', 'recipes', 'recipes_count')
-
-    def get_is_subscribed(self, obj):
-        user = self.context.get('request').user
-        if user.follower.filter(following=obj).exists():
-            return True
-        return False
-
-    def get_recipes(self, obj):
-        request = self.context.get('request')
-        recipes_limit = request.query_params.get('recipes_limit')
-        if recipes_limit:
-            recipes = obj.recipes.all()[:int(recipes_limit)]
-        else:
-            recipes = obj.recipes.all()
-        return FollowRecipeSerializer(
-            recipes,
-            many=True,
-        ).data
-
-    def get_recipes_count(self, obj):
-        return obj.recipes.count()
 
 
 class FollowCreateSerializer(serializers.ModelSerializer):

@@ -1,7 +1,8 @@
 from django.contrib.auth.models import AbstractBaseUser, PermissionsMixin
 from django.db import models
+from django.utils.translation import gettext as _
 
-from users.managers import UserManager
+from users.managers import CustomUserManager, SubscriptionQuerySet
 
 
 class User(AbstractBaseUser, PermissionsMixin):
@@ -32,10 +33,13 @@ class User(AbstractBaseUser, PermissionsMixin):
     EMAIL_FIELD = 'email'
     REQUIRED_FIELDS = ['username', 'first_name', 'last_name', ]
 
-    objects = UserManager()
+    objects = CustomUserManager()
+    users = SubscriptionQuerySet.as_manager()
 
     class Meta:
         ordering = ['id', ]
+        verbose_name = _('пользователь')
+        verbose_name_plural = _('пользователи')
 
     def __str__(self):
         return self.username
@@ -57,4 +61,15 @@ class Follow(models.Model):
 
     class Meta:
         ordering = ['follower']
-        unique_together = ('follower', 'following')
+        verbose_name = _('подписка')
+        verbose_name_plural = _('подписки')
+        constraints = [
+            models.UniqueConstraint(
+                fields=['follower', 'following'],
+                name="follower and following are not unique"
+            )
+        ]
+
+    def __str__(self):
+        return (f'{self.follower.username} подписан на '
+                f'{self.following.username}.')

@@ -1,6 +1,9 @@
 from django.contrib.auth import get_user_model
 from django.core.validators import MinValueValidator
 from django.db import models
+from django.utils.translation import gettext as _
+
+from .managers import RecipeManager
 
 User = get_user_model()
 
@@ -17,7 +20,6 @@ class Tag(models.Model):
         verbose_name='цвет тега',
         max_length=7,
         unique=True,
-        default="#ffffff",
     )
     slug = models.SlugField(
         unique=True,
@@ -25,7 +27,9 @@ class Tag(models.Model):
     )
 
     class Meta:
-        ordering = ['-id']
+        ordering = ['name']
+        verbose_name = _('тег')
+        verbose_name_plural = _('теги')
 
     def __str__(self):
         return self.name
@@ -42,10 +46,12 @@ class Ingredient(models.Model):
     )
 
     class Meta:
-        ordering = ['-id']
+        ordering = ['name']
+        verbose_name = _('ингредиент')
+        verbose_name_plural = _('ингредиенты')
 
     def __str__(self):
-        return self.name + ", " + self.measurement_unit
+        return f'{self.name}, {self.measurement_unit}'
 
 
 class Recipe(models.Model):
@@ -80,6 +86,7 @@ class Recipe(models.Model):
     )
     cooking_time = models.PositiveIntegerField(
         verbose_name='время приготовления (мин)',
+        null=True,
         validators=[
             MinValueValidator(
                 1,
@@ -88,31 +95,82 @@ class Recipe(models.Model):
             )
         ]
     )
+
     pub_date = models.DateTimeField(
         verbose_name='дата публикации',
         auto_now_add=True,
     )
 
-    def list_ingredients(self):
-        return ', '.join([i.name for i in self.ingredients.all()])
-
-    def list_tags(self):
-        return ', '.join([t.name for t in self.tags.all()])
+    objects = RecipeManager()
 
     def __str__(self):
         return self.name
 
     class Meta:
         ordering = ['-pub_date']
-        unique_together = ('author', 'name')
+        verbose_name = _('рецепт')
+        verbose_name_plural = _('рецепты')
+        constraints = [
+            models.UniqueConstraint(
+                fields=['author', 'name'],
+                name="author and recipe name not unique"
+            )
+        ]
+
+    @classmethod
+    def create(
+            cls, author, name, image, text, cooking_time, tags, ingredients
+    ):
+        recipe = cls(
+            author=author,
+            name=name,
+            image=image,
+            text=text,
+            cooking_time=cooking_time,
+        )
+        recipe.save()
+        for i in ingredients:
+            ingredient = RecipeIngredient(
+                recipe=recipe,
+                ingredient=i['id'],
+                amount=i['amount']
+            )
+            ingredient.save()
+        recipe.tags.set(tags)
+        return recipe
+
+    @classmethod
+    def update(
+            cls, recipe, name, image, text, cooking_time, tags, ingredients
+    ):
+        recipe.name = name
+        recipe.image = image
+        recipe.text = text
+        recipe.cooking_time = cooking_time
+        recipe.save()
+        for i in ingredients:
+            ingredient = RecipeIngredient(
+                recipe=recipe,
+                ingredient=i['id'],
+                amount=i['amount']
+            )
+            ingredient.save()
+
+        recipe.tags.set(tags)
+        return recipe
 
 
 class RecipeIngredient(models.Model):
     recipe = models.ForeignKey(
-        Recipe, on_delete=models.CASCADE, verbose_name='рецепт'
+        Recipe,
+        on_delete=models.CASCADE,
+        verbose_name='рецепт',
+        related_name='ingredient'
     )
     ingredient = models.ForeignKey(
-        Ingredient, on_delete=models.PROTECT, verbose_name='ингредиент'
+        Ingredient,
+        on_delete=models.PROTECT,
+        verbose_name='ингредиент'
     )
     amount = models.PositiveIntegerField(
         verbose_name='количество',
@@ -126,38 +184,61 @@ class RecipeIngredient(models.Model):
 
     class Meta:
         ordering = ['recipe']
-        unique_together = ('recipe', 'ingredient')
+        constraints = [
+            models.UniqueConstraint(
+                fields=['recipe', 'ingredient'],
+                name="recipe and ingredient not unique"
+            )
+        ]
 
 
 class Favorite(models.Model):
     user = models.ForeignKey(
         User,
         on_delete=models.CASCADE,
-        related_name='favorited_by'
+        related_name='favorited_by',
+        verbose_name='пользователь'
     )
     recipe = models.ForeignKey(
         Recipe,
         on_delete=models.CASCADE,
-        related_name='is_favorited'
+        related_name='favorited',
+        verbose_name='рецепт'
     )
 
     class Meta:
         ordering = ['user']
-        unique_together = ('user', 'recipe')
+        verbose_name = _('избранное')
+        verbose_name_plural = _('избранное')
+        constraints = [
+            models.UniqueConstraint(
+                fields=['user', 'recipe'],
+                name="user and favorite recipe not unique"
+            )
+        ]
 
 
 class ShoppingCart(models.Model):
     user = models.ForeignKey(
         User,
         on_delete=models.CASCADE,
-        related_name='buyer'
+        related_name='buyer',
+        verbose_name='пользователь'
     )
     recipe = models.ForeignKey(
         Recipe,
         on_delete=models.CASCADE,
-        related_name='is_in_shopping_cart'
+        # related_name='is_in_shopping_cart',
+        verbose_name='рецепт'
     )
 
     class Meta:
         ordering = ['user']
-        unique_together = ('user', 'recipe')
+        verbose_name = _('список покупок')
+        verbose_name_plural = _('список покупок')
+        constraints = [
+            models.UniqueConstraint(
+                fields=['user', 'recipe'],
+                name="user and recipe in shopping cart not unique"
+            )
+        ]

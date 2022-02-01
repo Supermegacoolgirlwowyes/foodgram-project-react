@@ -3,12 +3,11 @@ import io
 from django.db.models import Sum
 from django.http import FileResponse
 from django_filters.rest_framework import DjangoFilterBackend
-from reportlab.pdfbase import pdfmetrics
-from reportlab.pdfbase.ttfonts import TTFont
+from reportlab.pdfbase import pdfmetrics, ttfonts
 from reportlab.pdfgen import canvas
 from rest_framework import status, viewsets
 from rest_framework.decorators import action, api_view, permission_classes
-from rest_framework.generics import get_object_or_404  # as _get_object_or_404
+from rest_framework.generics import get_object_or_404
 from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.response import Response
 
@@ -33,15 +32,18 @@ class IngredientViewSet(viewsets.ReadOnlyModelViewSet):
     permission_classes = [AllowAny]
     serializer_class = IngredientSerializer
     filter_backends = [IngredientFilter, ]
-    search_fields = ['^name']
+    search_fields = ['name']
 
 
 class RecipeViewSet(viewsets.ModelViewSet):
-    queryset = Recipe.objects.all()
     permission_classes = [CreateOrAuthorOrReadOnly]
     filter_backends = [DjangoFilterBackend, ]
     filterset_class = RecipeFilter
     pagination_class = CustomPagination
+
+    def get_queryset(self):
+        user = self.request.user
+        return Recipe.objects.annotated(user).prefetched(user)
 
     def get_serializer_class(self):
         if self.request.method in ['list', 'retrieve']:
@@ -59,8 +61,7 @@ class RecipeViewSet(viewsets.ModelViewSet):
     @staticmethod
     def delete_method(request, recipe_id, model):
         user = request.user
-        recipe = get_object_or_404(Recipe, id=recipe_id)
-        instance = get_object_or_404(model, user=user, recipe=recipe)
+        instance = get_object_or_404(model, user=user, recipe_id=recipe_id)
         instance.delete()
         return Response(status=status.HTTP_204_NO_CONTENT)
 
@@ -97,82 +98,13 @@ class RecipeViewSet(viewsets.ModelViewSet):
         )
 
 
-"""class FavoriteView(views.APIView):
-    queryset = Recipe.objects.all()
-    serializer_class = RecipeDisplaySerializer
-    permission_classes = [IsAuthenticated]
-
-    def get_queryset(self):
-        return Recipe.objects.get(is_favorited__user=self.request.user)
-
-    def post(self, request, recipe_id):
-        data = {
-            'user': request.user.id,
-            'recipe': get_object_or_404(Recipe, id=recipe_id).id
-        }
-        serializer = FavoriteSerializer(
-            data=data,
-            context={'request': request}
-        )
-        serializer.is_valid(raise_exception=True)
-        serializer.save()
-        return Response(serializer.data, status=status.HTTP_201_CREATED)
-
-    def delete(self, request, recipe_id):
-        recipe = get_object_or_404(Recipe, id=recipe_id)
-        try:
-            Favorite.objects.get(
-                user=request.user,
-                recipe=recipe
-            ).delete()
-            return Response(status=status.HTTP_204_NO_CONTENT)
-        except Favorite.DoesNotExist:
-            return Response(
-                data={'message': 'Этого рецепта не было в избранном'},
-                status=status.HTTP_400_BAD_REQUEST
-            )"""
-
-
-"""class ShoppingCartView(views.APIView):
-    # queryset = Recipe.objects.all()
-    permission_classes = [IsAuthenticated]
-
-    def get_queryset(self):
-        return ShoppingCart.objects.get(user=self.request.user)
-
-    def post(self, request, recipe_id):
-        data = {
-            'user': request.user.id,
-            'recipe': get_object_or_404(Recipe, id=recipe_id).id
-        }
-        serializer = ShoppingCartSerializer(
-            data=data,
-            context={'request': request}
-        )
-        serializer.is_valid(raise_exception=True)
-        serializer.save()
-        return Response(serializer.data, status=status.HTTP_201_CREATED)
-
-    def delete(self, request, recipe_id):
-        recipe = get_object_or_404(Recipe, id=recipe_id)
-        try:
-            ShoppingCart.objects.get(
-                user=request.user,
-                recipe=recipe
-            ).delete()
-            return Response(status=status.HTTP_204_NO_CONTENT)
-        except ShoppingCart.DoesNotExist:
-            return Response(
-                data={'message': 'Этого рецепта не было в списке покупок'},
-                status=status.HTTP_400_BAD_REQUEST
-            )"""
-
-
 def create_pdf(ingredients):
     x, y = 50, 770
     buffer = io.BytesIO()
     pdf = canvas.Canvas(buffer)
-    pdfmetrics.registerFont(TTFont('Bitter', 'data/Bitter-VariableFont.ttf'))
+    pdfmetrics.registerFont(
+        ttfonts.TTFont('Bitter', 'data/Bitter-VariableFont.ttf')
+    )
     pdf.setTitle('Список_покупок')
     pdf.setFont('Bitter', 16)
     pdf.drawString(x, y, 'Cписок покупок')

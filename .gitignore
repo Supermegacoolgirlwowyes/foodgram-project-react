@@ -149,5 +149,5 @@ dmypy.json
 backend/media/
 backend/static/
 backend/recipes/recipes_tests.py
-backend/users/users_tests.py
+backend/users/tests.py
 initial/
