@@ -73,12 +73,12 @@ class Recipe(models.Model):
     text = models.TextField(
         verbose_name='описание приготовления',
     )
-    ingredients = models.ManyToManyField(
+    """ingredients = models.ManyToManyField(
         Ingredient,
         through='RecipeIngredient',
         through_fields=('recipe', 'ingredient'),
         verbose_name='ингредиенты',
-    )
+    )"""
     tags = models.ManyToManyField(
         Tag,
         verbose_name='теги',
@@ -117,45 +117,47 @@ class Recipe(models.Model):
             )
         ]
 
+    def get_tags_ingredients(**data):
+        tags = data.pop('tags')
+        ingredients = data.pop('ingredients')
+        return tags, ingredients
+
     @classmethod
-    def create(
-            cls, author, name, image, text, cooking_time, tags, ingredients
-    ):
+    def create(cls, author, **data):
+        # cls.get_tags_ingredients(**data)
+        tags = data.pop('tags')
+        ingredients = data.pop('ingredients')
         recipe = cls(
-            author=author,
-            name=name,
-            image=image,
-            text=text,
-            cooking_time=cooking_time,
-        )
+            author=author, **data)
         recipe.save()
         for i in ingredients:
-            ingredient = RecipeIngredient(
+            RecipeIngredient.objects.create(
                 recipe=recipe,
                 ingredient=i['id'],
                 amount=i['amount']
             )
-            ingredient.save()
         recipe.tags.set(tags)
+        recipe.is_favorited = False
+        recipe.is_in_shopping_cart = False
         return recipe
 
     @classmethod
-    def update(
-            cls, recipe, name, image, text, cooking_time, tags, ingredients
-    ):
-        recipe.name = name
-        recipe.image = image
-        recipe.text = text
-        recipe.cooking_time = cooking_time
-        recipe.save()
+    def update(cls, recipe, **data):
+        tags = data.pop('tags')
+        ingredients = data.pop('ingredients')
+        recipe.name = data.get('name')
+        recipe.image = data.get('image')
+        recipe.text = data.get('text')
+        recipe.cooking_time = data.get('cooking_time')
+        RecipeIngredient.objects.filter(recipe=recipe).delete()
         for i in ingredients:
-            ingredient = RecipeIngredient(
+            RecipeIngredient.objects.create(
                 recipe=recipe,
                 ingredient=i['id'],
                 amount=i['amount']
             )
-            ingredient.save()
-
+        recipe.save()
+        recipe.tags.clear()
         recipe.tags.set(tags)
         return recipe
 
@@ -165,7 +167,7 @@ class RecipeIngredient(models.Model):
         Recipe,
         on_delete=models.CASCADE,
         verbose_name='рецепт',
-        related_name='ingredient'
+        related_name='ingredients'
     )
     ingredient = models.ForeignKey(
         Ingredient,

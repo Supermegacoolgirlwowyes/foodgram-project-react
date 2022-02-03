@@ -61,7 +61,7 @@ class RecipeDisplaySerializer(serializers.ModelSerializer):
         )
 
     def get_ingredients(self, recipe):
-        ingredients = recipe.ingredient.all()
+        ingredients = recipe.ingredients.all()
         return RecipeIngredientSerializer(ingredients, many=True).data
 
 
@@ -83,6 +83,7 @@ class RecipeCreateSerializer(serializers.ModelSerializer):
         if self.context.get('request').method in ['POST', 'PUT', 'PATCH']:
             ingredient_id_list = []
             for i in ingredients:
+                # ingredients_set = set(i['id'])
                 if i['amount'] < 1:
                     raise validators.ValidationError(
                         {'amount': 'Значение должно быть больше ноля'}
@@ -91,6 +92,7 @@ class RecipeCreateSerializer(serializers.ModelSerializer):
                     raise validators.ValidationError(
                         {'ingredients': 'Ингредиенты должны быть уникальными'}
                     )
+                # ingredient_id_list.append(i['id'])
         return ingredients
 
     def validate_name(self, name):
@@ -111,8 +113,6 @@ class RecipeCreateSerializer(serializers.ModelSerializer):
         return Recipe.update(instance, **validated_data)
 
     def to_representation(self, instance):
-        instance.is_favorited = False
-        instance.is_in_shopping_cart = False
         request = self.context.get('request')
         context = {'request': request}
         return RecipeDisplaySerializer(instance, context=context).data

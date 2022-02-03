@@ -43,7 +43,7 @@ class RecipeAdmin(admin.ModelAdmin):
     inlines = [RecipeIngredientInline, ]
 
     def list_ingredients(self, obj):
-        return ', '.join(i.name for i in obj.ingredients.all())
+        return ', '.join(i.ingredient.name for i in obj.ingredients.all())
     list_ingredients.short_description = 'ингредиенты'
 
     def list_tags(self, obj):

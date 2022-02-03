@@ -9,14 +9,6 @@ from .models import Follow
 User = get_user_model()
 
 
-class CustomUserCreateSerializer(UserCreateSerializer):
-    class Meta:
-        model = User
-        fields = (
-            'email', 'username', 'first_name', 'last_name', 'password'
-        )
-
-
 class CustomUserSerializer(UserSerializer):
     is_subscribed = serializers.SerializerMethodField(read_only=True)
 
@@ -31,6 +23,19 @@ class CustomUserSerializer(UserSerializer):
         user = self.context.get('request').user
         return (user.is_authenticated and
                 user.follower.filter(following=obj).exists())
+
+
+class CustomUserCreateSerializer(UserCreateSerializer):
+    class Meta:
+        model = User
+        fields = (
+            'email', 'username', 'first_name', 'last_name', 'password'
+        )
+
+    def to_representation(self, instance):
+        request = self.context.get('request')
+        context = {'request': request}
+        return CustomUserSerializer(instance, context=context).data
 
 
 class FollowRecipeSerializer(serializers.ModelSerializer):
