@@ -1,6 +1,6 @@
 import io
 
-from django.db.models import Sum
+from django.db.models import Exists, OuterRef, Sum
 from django.http import FileResponse
 from django_filters.rest_framework import DjangoFilterBackend
 from reportlab.pdfbase import pdfmetrics, ttfonts
@@ -131,11 +131,18 @@ def create_pdf(ingredients):
 @api_view(['GET'])
 @permission_classes([IsAuthenticated])
 def shopping_list(request):
-    ingredients = RecipeIngredient.objects.filter(
-        recipe__is_in_shopping_cart__user=request.user
+    ingredients = RecipeIngredient.objects.annotate(
+        is_in_shopping_cart=Exists(
+            ShoppingCart.objects.filter(
+                user=request.user, recipe=OuterRef('recipe__pk')
+            )
+        )
+    ).filter(
+        is_in_shopping_cart=True
     ).values(
         'ingredient__name', 'ingredient__measurement_unit',
     ).order_by(
         'ingredient__name'
     ).annotate(amount=Sum('amount'))
     return create_pdf(ingredients)
+
