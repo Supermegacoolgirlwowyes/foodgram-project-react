@@ -145,10 +145,10 @@ class Recipe(models.Model):
     def update(cls, recipe, **data):
         tags = data.pop('tags')
         ingredients = data.pop('ingredients')
-        recipe.name = data.get('name')
-        recipe.image = data.get('image')
-        recipe.text = data.get('text')
-        recipe.cooking_time = data.get('cooking_time')
+        recipe.name = data.get('name', recipe.name)
+        recipe.image = data.get('image', recipe.image)
+        recipe.text = data.get('text', recipe.text)
+        recipe.cooking_time = data.get('cooking_time', recipe.cooking_time)
         RecipeIngredient.objects.filter(recipe=recipe).delete()
         for i in ingredients:
             RecipeIngredient.objects.create(
