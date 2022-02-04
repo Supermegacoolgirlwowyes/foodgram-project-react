@@ -145,4 +145,3 @@ def shopping_list(request):
         'ingredient__name'
     ).annotate(amount=Sum('amount'))
     return create_pdf(ingredients)
-
