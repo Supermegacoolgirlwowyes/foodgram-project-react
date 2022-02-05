@@ -9,7 +9,6 @@ User = get_user_model()
 
 
 class Tag(models.Model):
-
     name = models.CharField(
         verbose_name='тег',
         max_length=50,
@@ -73,12 +72,6 @@ class Recipe(models.Model):
     text = models.TextField(
         verbose_name='описание приготовления',
     )
-    """ingredients = models.ManyToManyField(
-        Ingredient,
-        through='RecipeIngredient',
-        through_fields=('recipe', 'ingredient'),
-        verbose_name='ингредиенты',
-    )"""
     tags = models.ManyToManyField(
         Tag,
         verbose_name='теги',
@@ -224,7 +217,6 @@ class ShoppingCart(models.Model):
     recipe = models.ForeignKey(
         Recipe,
         on_delete=models.CASCADE,
-        # related_name='is_in_shopping_cart',
         verbose_name='рецепт'
     )
 
