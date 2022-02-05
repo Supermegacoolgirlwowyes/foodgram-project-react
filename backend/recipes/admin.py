@@ -21,7 +21,8 @@ class IngredientAdmin(admin.ModelAdmin):
 
 class RecipeIngredientInline(admin.TabularInline):
     model = RecipeIngredient
-    # min_num = 3
+    min_num = 3
+    extra = 0
 
     def get_formset(self, request, obj=None, **kwargs):
         formset = super().get_formset(request, obj=None, **kwargs)

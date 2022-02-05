@@ -117,14 +117,8 @@ class Recipe(models.Model):
             )
         ]
 
-    def get_tags_ingredients(**data):
-        tags = data.pop('tags')
-        ingredients = data.pop('ingredients')
-        return tags, ingredients
-
     @classmethod
     def create(cls, author, **data):
-        # cls.get_tags_ingredients(**data)
         tags = data.pop('tags')
         ingredients = data.pop('ingredients')
         recipe = cls(

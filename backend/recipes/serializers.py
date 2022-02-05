@@ -83,16 +83,15 @@ class RecipeCreateSerializer(serializers.ModelSerializer):
         if self.context.get('request').method in ['POST', 'PUT', 'PATCH']:
             ingredient_id_list = []
             for i in ingredients:
-                # ingredients_set = set(i['id'])
-                if i['amount'] < 1:
-                    raise validators.ValidationError(
-                        {'amount': 'Значение должно быть больше ноля'}
-                    )
                 if i['id'] in ingredient_id_list:
                     raise validators.ValidationError(
                         {'ingredients': 'Ингредиенты должны быть уникальными'}
                     )
-                # ingredient_id_list.append(i['id'])
+                if i['amount'] < 1:
+                    raise validators.ValidationError(
+                        {'amount': 'Значение должно быть больше ноля'}
+                    )
+                ingredient_id_list.append(i['id'])
         return ingredients
 
     def validate_name(self, name):

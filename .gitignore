@@ -148,6 +148,8 @@ dmypy.json
 # My files and folders
 backend/media/
 backend/static/
+backend/recipes/migrations/previous_migrations/
 backend/recipes/recipes_tests.py
+backend/users/migrations/previous_migrations/
 backend/users/tests.py
 initial/
