@@ -91,7 +91,6 @@ Create new workflow in you GitHub Repository. Copy code from included **foodgram
 
 Whenever you need to implement your updates to the project, push them to the master branch. The workflow will automatically run the tests, create new Docker image, upload it to the DockerHub and Deploy your project. If the workflow runs successfully, you will receive a confirmation message on Telegram. Sweet :)
 
-
 ## Built With
 * [Django](https://www.djangoproject.com) - Python web framework
 * [Django REST](https://www.django-rest-framework.org) -  a toolkit for building Web APIs
@@ -107,7 +106,6 @@ Whenever you need to implement your updates to the project, push them to the mas
 
 * **Irina Balerina** - *Backend, Dockerizing, Project Infrastructure, Continuous Integration* - [Supermegacoolgirlwowyes](https://github.com/Supermegacoolgirlwowyes)
 * **Yandex Praktikum** - *Frontend* [Yandex Praktikum](https://github.com/yandex-praktikum/)
-
 
 ## License
 
