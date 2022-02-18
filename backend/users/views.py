@@ -1,7 +1,6 @@
 from django.contrib.auth import get_user_model
 from djoser.views import UserViewSet
 from rest_framework import generics, status, views
-from rest_framework.generics import get_object_or_404
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 
@@ -44,11 +43,10 @@ class FollowCreateView(views.APIView):
         return Response(serializer.data, status=status.HTTP_201_CREATED)
 
     def delete(self, request, user_id):
-        following = get_object_or_404(User, id=user_id)
         try:
             Follow.objects.get(
                 follower=request.user,
-                following=following
+                following=user_id
             ).delete()
             return Response(status=status.HTTP_204_NO_CONTENT)
         except Follow.DoesNotExist:

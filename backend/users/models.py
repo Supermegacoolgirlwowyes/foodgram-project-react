@@ -67,9 +67,13 @@ class Follow(models.Model):
             models.UniqueConstraint(
                 fields=['follower', 'following'],
                 name="follower and following are not unique"
+            ),
+            models.CheckConstraint(
+                check=~models.Q(follower=models.F('following')),
+                name="oneself subscription constraint"
             )
         ]
 
     def __str__(self):
-        return (f'{self.follower.username} подписан на '
-                f'{self.following.username}.')
+        return (f'{self.follower} подписан на '
+                f'{self.following}.')

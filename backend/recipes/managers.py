@@ -1,6 +1,5 @@
 from django.contrib.auth import get_user_model
-from django.db.models import (Count, Exists, Manager, OuterRef, Prefetch,
-                              QuerySet)
+from django.db.models import Count, Exists, OuterRef, Prefetch, QuerySet, Value
 
 from users.models import Follow
 from . import models
@@ -13,8 +12,8 @@ class RecipeQuerySet(QuerySet):
     def annotated(self, user):
         if not user.is_authenticated:
             return self.annotate(
-                is_favorited=Count(0),
-                is_in_shopping_cart=Count(0)
+                is_favorited=Value(0),
+                is_in_shopping_cart=Value(0)
             )
         return self.annotate(
             is_favorited=Exists(
@@ -54,15 +53,3 @@ class RecipeQuerySet(QuerySet):
                 )
             )
         )
-
-
-class RecipeManager(Manager):
-
-    def get_queryset(self):
-        return RecipeQuerySet(self.model, using=self._db)
-
-    def annotated(self, user):
-        return self.get_queryset().annotated(user)
-
-    def prefetched(self, user):
-        return self.get_queryset().prefetched(user)

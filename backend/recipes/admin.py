@@ -21,7 +21,7 @@ class IngredientAdmin(admin.ModelAdmin):
 
 class RecipeIngredientInline(admin.TabularInline):
     model = RecipeIngredient
-    min_num = 3
+    min_num = 1
     extra = 0
 
     def get_formset(self, request, obj=None, **kwargs):
@@ -37,7 +37,7 @@ class RecipeAdmin(admin.ModelAdmin):
         'list_tags', 'count_favorites'
     )
     list_display_links = ('name', )
-    list_filter = ('author', 'name', 'tags', )
+    list_filter = ('author', )
     search_fields = (
         'name', 'author__username', 'ingredients__name', 'tags__name'
     )

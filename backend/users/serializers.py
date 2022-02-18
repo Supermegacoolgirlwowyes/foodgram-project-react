@@ -57,10 +57,9 @@ class FollowDisplaySerializer(serializers.ModelSerializer):
     def get_recipes(self, obj):
         request = self.context.get('request')
         recipes_limit = request.query_params.get('recipes_limit')
+        recipes = obj.recipes.all()
         if recipes_limit:
-            recipes = obj.recipes.all()[:int(recipes_limit)]
-        else:
-            recipes = obj.recipes.all()
+            recipes = recipes[:int(recipes_limit)]
         return FollowRecipeSerializer(
             recipes,
             many=True,
@@ -77,7 +76,7 @@ class FollowCreateSerializer(serializers.ModelSerializer):
                 queryset=Follow.objects.all(),
                 fields=('follower', 'following'),
                 message='Вы уже подписаны на этого автора'
-            )
+            ),
         ]
 
     def validate_following(self, following):

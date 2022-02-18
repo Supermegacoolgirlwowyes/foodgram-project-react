@@ -1,9 +1,9 @@
 from django.contrib.auth import get_user_model
 from django.core.validators import MinValueValidator
-from django.db import models
+from django.db import DatabaseError, models, transaction
 from django.utils.translation import gettext as _
 
-from .managers import RecipeManager
+from .managers import RecipeQuerySet
 
 User = get_user_model()
 
@@ -94,7 +94,7 @@ class Recipe(models.Model):
         auto_now_add=True,
     )
 
-    objects = RecipeManager()
+    objects = RecipeQuerySet.as_manager()
 
     def __str__(self):
         return self.name
@@ -110,43 +110,48 @@ class Recipe(models.Model):
             )
         ]
 
-    @classmethod
-    def create(cls, author, **data):
+    @staticmethod
+    def get_tags_ingredients(**data):
         tags = data.pop('tags')
         ingredients = data.pop('ingredients')
-        recipe = cls(
-            author=author, **data)
-        recipe.save()
+        return tags, ingredients, data
+
+    @staticmethod
+    def add_ingredients(recipe, ingredients):
         for i in ingredients:
             RecipeIngredient.objects.create(
                 recipe=recipe,
                 ingredient=i['id'],
                 amount=i['amount']
             )
-        recipe.tags.set(tags)
-        recipe.is_favorited = False
-        recipe.is_in_shopping_cart = False
-        return recipe
+        return
 
     @classmethod
-    def update(cls, recipe, **data):
-        tags = data.pop('tags')
-        ingredients = data.pop('ingredients')
-        recipe.name = data.get('name', recipe.name)
-        recipe.image = data.get('image', recipe.image)
-        recipe.text = data.get('text', recipe.text)
-        recipe.cooking_time = data.get('cooking_time', recipe.cooking_time)
-        RecipeIngredient.objects.filter(recipe=recipe).delete()
-        for i in ingredients:
-            RecipeIngredient.objects.create(
-                recipe=recipe,
-                ingredient=i['id'],
-                amount=i['amount']
-            )
-        recipe.save()
-        recipe.tags.clear()
-        recipe.tags.set(tags)
-        return recipe
+    def create(cls, author, **data):
+        tags, ingredients, data = cls.get_tags_ingredients(**data)
+        try:
+            with transaction.atomic():
+                recipe = cls(
+                    author=author, **data)
+                recipe.save()
+                cls.add_ingredients(recipe, ingredients)
+                recipe.tags.set(tags)
+                recipe.is_favorited = False
+                recipe.is_in_shopping_cart = False
+                return recipe
+        except DatabaseError:
+            cls.handle_exception()
+
+    def update(self, **data):
+        tags, ingredients, data = self.get_tags_ingredients(**data)
+        for field, value in data.items():
+            setattr(self, field, value)
+        RecipeIngredient.objects.filter(recipe=self).delete()
+        self.add_ingredients(self, ingredients)
+        self.save()
+        self.tags.clear()
+        self.tags.set(tags)
+        return self
 
 
 class RecipeIngredient(models.Model):
