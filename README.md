@@ -3,11 +3,6 @@
 
 Foodgram service is made for people who are passionate about food. View recipes from all over the world or create your owns, follow the authors you like, make a list of your favorite recipes or download a shopping list in just few clicks.
 
-### Foodgram and Foodgram API
-
-The project is available at www.irinabalerina.tk
-Current version of Foodgram API is available at www.irinabalerina.tk/api
-
 ### Getting Started
 
 These instructions will get you a copy of the project up and running on your production server.
